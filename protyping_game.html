@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProTyping</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: monospace;
+      background: linear-gradient(135deg, #ffffff, #81d4fa);
+      color: #01579b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-size: 400% 400%;
+      animation: bubbleBackground 15s ease infinite;
+      background-repeat: no-repeat;
+    }
+
+    @keyframes bubbleBackground {
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+
+    #game {
+      text-align: center;
+    }
+
+    .word {
+      font-size: 2.4rem;
+      margin: 1rem;
+      text-shadow: 2px 2px 15px rgba(0,0,0,0.3);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(129,212,250,0.85));
+      padding: 0.7rem 1.2rem;
+      border-radius: 50px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 4px 10px rgba(255,255,255,0.6);
+    }
+
+    input {
+      padding: 0.7rem;
+      font-size: 1.2rem;
+      width: 350px;
+      text-align: center;
+      border-radius: 50px;
+      border: 2px solid #0277bd;
+      box-shadow: inset 0 4px 6px rgba(0,0,0,0.25);
+      background: radial-gradient(circle at 50% 50%, #ffffff, #81d4fa);
+    }
+
+    button {
+      margin: 0.5rem;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(145deg, #4fc3f7, #81d4fa);
+      color: #004d40;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      transform: scale(1.08);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    }
+
+    #lastLevelBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <h2 id="level">Level 1</h2>
+    <p id="wpmReq"></p>
+    <div class="word" id="word"></div>
+    <input type="text" id="input" placeholder="Type here...">
+    <div id="timer"></div>
+    <div id="result"></div>
+  </div>
+
+  <button id="lastLevelBtn" onclick="jumpToLastLevel()">Go to Last Level</button>
+
+  <script>
+    const words = ["hello","world","protyping","javascript","level","challenge","keyboard","speed","typing","accuracy"];
+    const maxLevels = 320;
+    let level = 1;
+    let currentWord = "";
+    let startTime;
+    let timerInterval;
+    let unlockedLevels = [];
+
+    const wordDisplay = document.getElementById("word");
+    const input = document.getElementById("input");
+    const result = document.getElementById("result");
+    const levelDisplay = document.getElementById("level");
+    const wpmReq = document.getElementById("wpmReq");
+    const timerDisplay = document.getElementById("timer");
+
+    function loadLevel(lvl){
+      clearInterval(timerInterval);
+      levelDisplay.textContent = "Level " + lvl;
+      let requiredWPM = Math.min(Math.max(1, Math.round(lvl * 1.45)), 465);
+      wpmReq.textContent = "Required WPM: " + requiredWPM;
+
+      currentWord = (lvl === maxLevels) ? "'" : words[Math.floor(Math.random() * words.length)];
+      wordDisplay.textContent = currentWord;
+      input.value = "";
+      result.textContent = "";
+      startTime = Date.now();
+
+      let timeLimit = (lvl === maxLevels) ? 9999 : Math.max(45, 360 - lvl * 1.2);
+      timerDisplay.textContent = "Time Left: " + timeLimit + "s";
+
+      timerInterval = setInterval(()=>{
+        timeLimit--;
+        timerDisplay.textContent = "Time Left: " + timeLimit + "s";
+        if(timeLimit <= 0){
+          clearInterval(timerInterval);
+          result.textContent = "⏰ Time Up! Restarting...";
+          setTimeout(()=>loadLevel(lvl), 1500);
+        }
+      }, 1000);
+      input.focus();
+    }
+
+    input.addEventListener("keyup", e => {
+      if(e.key === "Enter"){
+        let typed = input.value.trim();
+        let duration = (Date.now()-startTime)/1000/60;
+        let wpm = (duration > 0) ? Math.round(typed.split(" ").length/duration) : 0;
+        let requiredWPM = Math.min(Math.max(1, Math.round(level * 1.45)), 465);
+
+        if(typed === currentWord && wpm >= requiredWPM){
+          result.textContent = `✔ Correct! WPM: ${wpm}`;
+          clearInterval(timerInterval);
+          if(level < maxLevels){
+            unlockedLevels.push(level + 1);
+            level++;
+            setTimeout(()=>loadLevel(level), 500);
+          } else {
+            result.innerHTML += '<br>🎉 Last Level Complete! Only need to type \'';
+          }
+        } else {
+          result.textContent = `✘ Failed! WPM: ${wpm} (Needed: ${requiredWPM})`;
+          clearInterval(timerInterval);
+          setTimeout(()=>loadLevel(level), 1500);
+        }
+      }
+    });
+
+    function jumpToLastLevel(){
+      level = maxLevels;
+      loadLevel(level);
+    }
+
+    window.onload = () => { loadLevel(level); };
+  </script>
+</body>
+</html>
